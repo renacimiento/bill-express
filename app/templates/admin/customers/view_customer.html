@@ -1,0 +1,26 @@
+<!-- app/templates/admin/customers/customer.html -->
+
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/utils.html" as utils %}
+{% extends "base.html" %}
+{% block title %}
+    View Customer
+{% endblock %}
+{% block body %}
+<div class="content-section">
+ <div class="outer">
+    <div class="middle">
+      <div class="inner">
+        <div class="center">
+                <h1>View Customer</h1>
+            <br/>
+            <div> {{customer.name}}</div>
+            <div> {{customer.address}}</div>
+            <div> {{customer.TIN}}</div>
+            <div> {{customer.phone_number}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
