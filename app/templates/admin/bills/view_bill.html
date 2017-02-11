@@ -37,7 +37,7 @@
     <div class="row">
         <div class="col-xs-12">
     		<div class="invoice-title">
-    			<h2>Invoice</h2><h3 class="pull-right">Bill Number{{bill.bil_number}}</h3>
+    			<h2>Invoice</h2><h3 class="pull-right">Bill Number{{bill.bill_number}}</h3>
     		</div>
     		<hr>
     		<div class="row">
@@ -76,13 +76,13 @@
     						</thead>
     						<tbody id="bill-rows">
     							<!-- foreach ($order->lineItems as $line) or some such thing here -->
-                                {% for billdetail in billdetails %}
+                                {% for bill_item in bill_items %}
                                     <tr class='item-row'>
-                                        <td>{{billdetail[1].name}}</td>
+                                        <td>{{bill_item[1].name}}</td>
                                         <td> BRAND </td>
-                                        <td class='text-center'>{{billdetail[0].item_price}}</td>
-                                        <td class='text-center'>{{billdetail[0].quantity}}</td>
-                                        <td class='text-right item-total'>{{billdetail[0].total_price}}</td>
+                                        <td class='text-center'>{{bill_item[0].item_price}}</td>
+                                        <td class='text-center'>{{bill_item[0].quantity}}</td>
+                                        <td class='text-right item-total'>{{bill_item[0].total_price}}</td>
                                         </tr>
                                 {% endfor %}
     							<tr>

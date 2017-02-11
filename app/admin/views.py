@@ -6,7 +6,7 @@ import json
 from . import admin
 from forms import CustomerForm, ItemForm
 from .. import db
-from ..models import Customer, Item, Bill, BillDetail
+from ..models import Customer, Item, Bill, BillItem
 
 def check_admin():
     """
@@ -112,6 +112,7 @@ def view_customer(id):
     add_customer = False
 
     customer = Customer.query.get_or_404(id)
+    bills = db.session.query(Bill).filter(Bill.customer_id==id).all()
     # form = CustomerForm(obj=customer)
     # form.name.data = customer.name 
     # form.TIN.data = customer.TIN 
@@ -119,7 +120,7 @@ def view_customer(id):
     # form.address.data = customer.address 
     
     return render_template('admin/customers/view_customer.html', action="View",
-                           customer=customer, title="View Customer")
+                           customer=customer,bills=bills, title="View Customer")
 
 
 @admin.route('/customers/delete/<int:id>', methods=['GET', 'POST'])
@@ -271,7 +272,7 @@ def add_bill():
         data = request.json
         # data = json.loads(request.data.decode(encoding='UTF-8'))
         print data
-        bill = Bill(bil_number=1,customer_id=data["customer_id"],customer_name=data["customer_name"],
+        bill = Bill(bill_number=data["bill_number"],customer_id=data["customer_id"],customer_name=data["customer_name"],
             total_bill=data["total_bill"],status=data["payment_status"])
         db.session.add(bill)
         db.session.flush()
@@ -285,9 +286,9 @@ def add_bill():
             item_price = item["item_price"]
             quantity = item["quantity"]
             total_price = item["total_price"]
-            billdetail = BillDetail(bill_id = bill_id,item_id=item_id,
+            bill_item = BillItem(bill_id = bill_id,item_id=item_id,
                 item_price=item_price,quantity=quantity,total_price=total_price)
-            db.session.add(billdetail)
+            db.session.add(bill_item)
         db.session.commit()
         flash('You have successfully added a new bill.')
         return redirect(url_for('admin.list_bills'))
@@ -296,30 +297,13 @@ def add_bill():
     items = Item.query.all()
     customers = Customer.query.all()
 
-
-    # if form.validate_on_submit():
-    #     bill = Bill(name=form.name.data,
-    #                             TIN=form.TIN.data,phone_number=form.phone_number.data,address=form.address.data)
-    #     try:
-    #         # add bill to the database
-    #         db.session.add(bill)
-    #         db.session.commit()
-    #         flash('You have successfully added a new bill.')
-    #     except Exception, e:
-    #         print str(e)
-    #         db.session.rollback()
-    #         # in case bill name already exists
-    #         flash('Error: bill name already exists.')
-    #         return render_template('admin/bills/bill.html', action="Add",
-    #                        add_bill=add_bill, form=form,
-    #                        bill=bill, title="Add Bill")  
-
-    #     # redirect to bills page
-    #     return redirect(url_for('admin.list_bills'))
-
-    # load bill template
+    billnumber = db.session.query(Bill).order_by(Bill.bill_number.desc()).first()
+    if billnumber:
+        bill_number = billnumber.bill_number + 1
+    else:
+        bill_number = 1
     return render_template('admin/bills/bill.html', action="Add",
-                           add_bill=add_bill,items=items,customers=customers,title="Add Bill")
+                           add_bill=add_bill,bill_number=bill_number,items=items,customers=customers,title="Add Bill")
 
 
 @admin.route('/bills/edit/<int:id>', methods=['GET', 'POST'])
@@ -389,9 +373,9 @@ def view_bill(id):
 
     bill = Bill.query.get_or_404(id)
     print bill
-    billdetails = db.session.query(BillDetail,Item).filter(BillDetail.bill_id==id).join(Item).all()
+    bill_items = db.session.query(BillItem,Item).filter(BillItem.bill_id==id).join(Item).all()
     print "=============="
-    print billdetails
+    print bill_items
     # form = CustomerForm(obj=customer)
     # form.name.data = customer.name 
     # form.TIN.data = customer.TIN 
@@ -399,6 +383,6 @@ def view_bill(id):
     # form.address.data = customer.address 
     
     return render_template('admin/bills/view_bill.html', action="View",
-                           bill=bill,billdetails=billdetails, title="View Bill")
+                           bill=bill,bill_items=bill_items, title="View Bill")
 
 

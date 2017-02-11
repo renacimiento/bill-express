@@ -74,6 +74,7 @@ $(document).ready(function(){
         obj.customer_id = $('.customer-name').val();
         obj.customer_name = $('.customer-name option:selected').text();
         obj.total_bill = $('.sub-total').html();
+        obj.bill_number = {{bill_number}}
         obj.payment_status = false;
         items = []
         $('.item-row').each(function(argument) {
@@ -124,7 +125,7 @@ $(document).ready(function(){
     <div class="row">
         <div class="col-xs-12">
     		<div class="invoice-title">
-    			<h2>Invoice</h2><h3 class="pull-right">Order # 12345</h3>
+    			<h2>Invoice</h2><h3 class="pull-right">Bill Number {{bill_number}}</h3>
     		</div>
     		<hr>
     		<div class="row">

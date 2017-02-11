@@ -82,23 +82,23 @@ class Item(db.Model):
     def __repr__(self):
         return '<Item: {}>'.format(self.name)
 
-class BillDetail(db.Model):
+class BillItem(db.Model):
     """
-    Create a Bill Details table
+    Create a Bill Items table
     """
 
-    __tablename__ =  "bill_details"
+    __tablename__ =  "bill_items"
 
     id = db.Column(db.Integer, primary_key=True)
     bill_id = db.Column(db.Integer,db.ForeignKey('bills.id'))
     item_id = db.Column(db.Integer,db.ForeignKey('items.id'))
     item_price = db.Column(db.DECIMAL(10,2))
     quantity = db.Column(db.Integer)
-    # discount_type = db.Column(db.Integer)
+    discount = db.Column(db.DECIMAL(10,2))
     total_price = db.Column(db.DECIMAL(10,2))
     
     def __repr__(self):
-        return '<BillDetail: {}>'.format(self.bill_id)
+        return '<BillItem: {}>'.format(self.bill_id)
  
 class Bill(db.Model):
 
@@ -109,11 +109,11 @@ class Bill(db.Model):
     __tablename__ = "bills"
 
     id = db.Column(db.Integer, primary_key=True)
-    bil_number = db.Column(db.Integer)
+    bill_number = db.Column(db.Integer, unique=True)
     customer_id = db.Column(db.Integer,db.ForeignKey('customers.id'))
     customer_name = db.Column(db.String(60))
+    customer_address = db.Column(db.String(200))
     date = db.Column(db.Date)
-    brand = db.Column(db.String(50))#Remove Brand
     bill_amount_1 = db.Column(db.DECIMAL(10,2))
     bill_amount_2 = db.Column(db.DECIMAL(10,2))
     tax_amount_1 = db.Column(db.DECIMAL(10,2))
@@ -122,4 +122,4 @@ class Bill(db.Model):
     status = db.Column(db.Boolean,default=False)
     
     def __repr__(self):
-        return '<Bill: {}>'.format(self.bil_number)
+        return '<Bill: {}>'.format(self.bill_number)
