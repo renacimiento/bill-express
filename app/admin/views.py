@@ -1,12 +1,12 @@
 # app/admin/views.py
 
-from flask import abort, flash, redirect, render_template, url_for
+from flask import abort, flash, redirect, render_template, url_for, request
 from flask_login import current_user, login_required
-
+import json
 from . import admin
 from forms import CustomerForm, ItemForm
 from .. import db
-from ..models import Customer, Item
+from ..models import Customer, Item, Bill, BillDetail
 
 def check_admin():
     """
@@ -243,5 +243,162 @@ def delete_item(id):
     return redirect(url_for('admin.list_items'))
 
     return render_template(title="Delete Item")
+
+
+
+@admin.route('/bills', methods=['GET', 'POST'])
+@login_required
+def list_bills():
+
+    check_admin()
+
+    bills = Bill.query.all()
+    return render_template('admin/bills/bills.html',
+                           bills=bills, title="Bills")
+
+
+@admin.route('/bills/add', methods=['GET', 'POST'])
+@login_required
+def add_bill():
+    """
+    Add a bill to the database
+    """
+    check_admin()
+    print ("HERE")
+    if request.data:
+        print("POST_REQUEST")
+        # data = request.data
+        data = request.json
+        # data = json.loads(request.data.decode(encoding='UTF-8'))
+        print data
+        bill = Bill(bil_number=1,customer_id=data["customer_id"],customer_name=data["customer_name"],
+            total_bill=data["total_bill"],status=data["payment_status"])
+        db.session.add(bill)
+        db.session.flush()
+        print "HERES THE GENERATED ID"
+        bill_id = bill.id
+        items = data["items"]
+        for i,item in enumerate(items):
+            print "HERES THE Item"
+            print item
+            item_id = item["item_id"]
+            item_price = item["item_price"]
+            quantity = item["quantity"]
+            total_price = item["total_price"]
+            billdetail = BillDetail(bill_id = bill_id,item_id=item_id,
+                item_price=item_price,quantity=quantity,total_price=total_price)
+            db.session.add(billdetail)
+        db.session.commit()
+        flash('You have successfully added a new bill.')
+        return redirect(url_for('admin.list_bills'))
+        
+    add_bill = True
+    items = Item.query.all()
+    customers = Customer.query.all()
+
+
+    # if form.validate_on_submit():
+    #     bill = Bill(name=form.name.data,
+    #                             TIN=form.TIN.data,phone_number=form.phone_number.data,address=form.address.data)
+    #     try:
+    #         # add bill to the database
+    #         db.session.add(bill)
+    #         db.session.commit()
+    #         flash('You have successfully added a new bill.')
+    #     except Exception, e:
+    #         print str(e)
+    #         db.session.rollback()
+    #         # in case bill name already exists
+    #         flash('Error: bill name already exists.')
+    #         return render_template('admin/bills/bill.html', action="Add",
+    #                        add_bill=add_bill, form=form,
+    #                        bill=bill, title="Add Bill")  
+
+    #     # redirect to bills page
+    #     return redirect(url_for('admin.list_bills'))
+
+    # load bill template
+    return render_template('admin/bills/bill.html', action="Add",
+                           add_bill=add_bill,items=items,customers=customers,title="Add Bill")
+
+
+@admin.route('/bills/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_bill(id):
+    """
+    Edit a bill
+    """
+    return
+    check_admin()
+
+    add_bill = False
+
+    bill = Bill.query.get_or_404(id)
+    form = BillForm(obj=bill)
+    if form.validate_on_submit():
+        bill.name = form.name.data
+        bill.TIN = form.TIN.data
+        bill.phone_number = form.phone_number.data
+        bill.address = form.address.data
+        db.session.commit()
+        flash('You have successfully edited the bill.')
+
+        # redirect to the bills page
+        return redirect(url_for('admin.list_bills'))
+    else:
+        print "VALIDATION FAILED"
+        return render_template('admin/bills/bill.html', action="Edit",
+                           add_bill=add_bill, form=form,
+                           bill=bill, title="Edit Bill")   
+    form.name.data = bill.name 
+    form.TIN.data = bill.TIN 
+    form.phone_number.data = bill.phone_number 
+    form.address.data = bill.address 
+    
+    return render_template('admin/bills/bill.html', action="Edit",
+                           add_bill=add_bill, form=form,
+                           bill=bill, title="Edit Bill")
+
+@admin.route('/bills/delete/<int:id>', methods=['GET','POST'])
+@login_required
+def delete_bill(id):
+    """
+    Delete a bill from the database
+    """
+    return
+    check_admin()
+
+    bill = Bill.query.get_or_404(id)
+    db.session.delete(bill)
+    db.session.commit()
+    flash('You have successfully deleted the bill.')
+
+    # redirect to the bills page
+    return redirect(url_for('admin.list_bills'))
+
+    return render_template(title="Delete Bill")
+
+@admin.route('/bills/<int:id>', methods=['GET'])
+@login_required
+def view_bill(id):
+    """
+    View a bill
+    """
+    check_admin()
+
+
+    bill = Bill.query.get_or_404(id)
+    print bill
+    billdetails = db.session.query(BillDetail,Item).filter(BillDetail.bill_id==id).join(Item).all()
+    print "=============="
+    print billdetails
+    # form = CustomerForm(obj=customer)
+    # form.name.data = customer.name 
+    # form.TIN.data = customer.TIN 
+    # form.phone_number.data = customer.phone_number 
+    # form.address.data = customer.address 
+    
+    return render_template('admin/bills/view_bill.html', action="View",
+                           bill=bill,billdetails=billdetails, title="View Bill")
 
 

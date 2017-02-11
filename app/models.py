@@ -98,7 +98,7 @@ class BillDetail(db.Model):
     total_price = db.Column(db.DECIMAL(10,2))
     
     def __repr__(self):
-        return '<Bill: {}>'.format(self.name)
+        return '<BillDetail: {}>'.format(self.bill_id)
  
 class Bill(db.Model):
 
@@ -113,7 +113,7 @@ class Bill(db.Model):
     customer_id = db.Column(db.Integer,db.ForeignKey('customers.id'))
     customer_name = db.Column(db.String(60))
     date = db.Column(db.Date)
-    brand = db.Column(db.String(50))
+    brand = db.Column(db.String(50))#Remove Brand
     bill_amount_1 = db.Column(db.DECIMAL(10,2))
     bill_amount_2 = db.Column(db.DECIMAL(10,2))
     tax_amount_1 = db.Column(db.DECIMAL(10,2))
@@ -122,4 +122,4 @@ class Bill(db.Model):
     status = db.Column(db.Boolean,default=False)
     
     def __repr__(self):
-        return '<Item: {}>'.format(self.name)
+        return '<Bill: {}>'.format(self.bil_number)
