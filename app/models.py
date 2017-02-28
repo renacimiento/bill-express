@@ -94,7 +94,7 @@ class BillItem(db.Model):
     item_id = db.Column(db.Integer,db.ForeignKey('items.id'))
     item_price = db.Column(db.DECIMAL(10,2))
     quantity = db.Column(db.Integer)
-    discount = db.Column(db.DECIMAL(10,2))
+    discount = db.Column(db.DECIMAL(10,2),default=0.00)
     total_price = db.Column(db.DECIMAL(10,2))
     
     def __repr__(self):

@@ -13,58 +13,112 @@
 {% block body %}
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
 <script>
 $(document).ready(function(){
+    items = {}
+    item_total_default = '0.00'
+    item_quantity_input_html = "<input class='item-quantity' onkeypress='return event.charCode >= 48 && event.charCode <= 57'></input>"
+    item_discount_input_html = "<input class='item-discount' onkeypress='return (event.charCode >= 48 && event.charCode <= 57) || (event.charCode==46)' value='0'></input>"
+    {% for item in items %}
+        var obj = {}
+        obj["price"]='{{item.price}}'
+        obj["id"]='{{item.id}}'
+        if(!('{{item.name}}' in items))
+            items['{{item.name}}'] = {}    
+        items['{{item.name}}']['{{item.brand}}'] = obj
+    {% endfor %}
+    existing_items = []
+    {% for bill_item in bill_items %}
+        var obj = {}
+        obj["name"] = '{{bill_item[1].name}}'
+        obj["brand"]= '{{bill_item[1].brand}}'
+        existing_items.push(obj)
+    {% endfor %}
     $("#add-item").click(function(){
 
         str = "";
         str += "<tr class='item-row'>\
-                    <td>\
+                    <td class='item-name-cell'>\
                         <select class='item-select'>"
-        {% for item in items %}
-        str += "<option value='{{item.id}}'>{{item.name}}</option>"
-        {% endfor %}
+        for (var item_name in items){
+        str += ("<option>" + item_name+"</option>")
+        }
         str += "</select> \
                 </td> \
-                <td> \
-                    BAND \
+                <td class='item-brand-cell'> \
                 </td> \
-                <td class='text-center'><input class='item-price' onkeypress='return (event.charCode >= 48 && event.charCode <= 57) || (event.charCode==46)'></input></td>\
-                <td class='text-center'><input class='item-quantity' onkeypress='return event.charCode >= 48 && event.charCode <= 57'></input></td>\
-                <td class='text-right item-total'></td>\
+                <td class='text-center item-price'></td>\
+                <td class='text-center item-quantity-cell'>" + item_quantity_input_html+ "</td>\
+                <td class='text-center item-discount-cell'>" + item_discount_input_html+ "</td>\
+                <td class='text-right item-total'>" +item_total_default + "</td>\
                 <td><i class='fa fa-trash pull-right'></i> </td>\
                 </tr>"
         $('#bill-rows > tr').eq($('#bill-rows > tr.item-row').length).before(str);
+        element = $('#bill-rows > tr').eq($('#bill-rows > tr.item-row').length-1).find('.item-select')
+        $(element).select2();
+        $(element).val($(element).find('option').first().val()).trigger('change');
 
     });
-    function update_total () {
+    function resetCounter(row){
+        $(row).find('.item-quantity').val('');
+        $(row).find('.item-discount').val();
+        $(row).find('.item-total').html(item_total_default);
+        update_total() 
+    }
+    function update_total() {
         var total_price = 0;
         $('.item-total').each(function(argument) {
             total_price += parseFloat(parseFloat($(this).html()).toFixed(2))
-            // total_price += parseFloat($(this).html())
         });
-        $('.sub-total').html(total_price)
+        $('.sub-total').html(parseFloat(total_price).toFixed(2))
     }
-    $(document).on('change', '.item-price', function(){
-        var quantity = $(this).closest('td').next().find('input.item-quantity').val();
-        if (quantity == ""){
-            console.log("NO Quantity Mentioned")
-        } else {
-            var total_price = $(this).val()*quantity
-            $(this).closest('td').next().next().html(parseFloat(total_price).toFixed(2))
+    function update_item_total(row){
+        var price = $(row).find('.item-price').html();
+        var quantity = $(row).find('.item-quantity').val();
+        var discount = $(row).find('.item-discount').val();
+        if(price == "")
+            price = 0
+        if(quantity == "")
+            quantity = 0
+        if(discount == "")
+            discount = 0
+        var init_price = price*quantity
+        var item_total = init_price*(100 - discount)/100
+        $(row).find('.item-total').html(parseFloat(item_total).toFixed(2))
+
+    }
+    $(document).on('change', '.item-price,.item-quantity,.item-discount', function(){
+            update_item_total($(this).closest('tr'))
             update_total()
-        }
     });
-    $(document).on('change', '.item-quantity', function(){
-        var price = $(this).closest('td').prev().find('input.item-price').val();
-        if (price == ""){
-            console.log("NO price Mentioned")
-        } else {
-            var total_price = $(this).val()*price
-            $(this).closest('td').next().html(parseFloat(total_price).toFixed(2))
-            update_total()
-        }
+    $(document).on('change', '.item-select', function(){
+            element = $(this).closest('tr').find('.item-select');
+            item_name = $(element).find('option:selected').text();
+            
+            str = "<select class='brand-select'>"
+            for(var brand_name in items[item_name]){
+                str += ("<option>" + brand_name+ "</option>")
+            }
+            str += "</select>"
+            element = $(this).closest('tr').find(".item-brand-cell");
+            $(element).html(str)
+            element = $(element).find(".brand-select")
+            $(element).select2();
+            $(element).val($(element).find('option').first().val()).trigger('change');
+            resetCounter($(this).closest('tr'))
     });
+    $(document).on('change', '.brand-select', function(){
+            element = $(this).closest('tr').find('.item-select');
+            item_name = $(element).find('option:selected').text();
+            element = $(this).closest('tr').find('.brand-select');
+            brand = $(element).find('option:selected').text();
+            str = items[item_name][brand]["price"]
+            $(this).closest('tr').find('.item-price').html(str)
+            resetCounter($(this).closest('tr'))
+    });
+
     $(document).on('click', '.fa-trash', function(){
         $(this).closest('tr').remove();
         update_total()
@@ -76,30 +130,79 @@ $(document).ready(function(){
         obj.total_bill = $('.sub-total').html();
         obj.bill_number = {{bill_number}}
         obj.payment_status = false;
-        items = []
+        itemsList = []
         $('.item-row').each(function(argument) {
            var itemObj = {}
-           itemObj.item_price = $(this).find('.item-price').val();
+           item_name = $(this).find('.item-select option:selected').html();
+           brand = $(this).find('.brand-select option:selected').html();
+           itemObj.item_id = items[item_name][brand]["id"]
+           itemObj.item_price = $(this).find('.item-price').html();
+           itemObj.discount = $(this).find('.item-discount').val();
            itemObj.quantity = $(this).find('.item-quantity').val();
            itemObj.total_price = $(this).find('.item-total').html();
-           itemObj.item_id = $(this).find('.item-select').val();
-           items.push(itemObj);
+           itemsList.push(itemObj);
         });
-        obj.items = items
+        obj.items = itemsList
         console.log(obj);
-
-
+        url = '/admin/bills/add'
+        {% if edit_bill %}
+        url = "{{ url_for('admin.edit_bill', id=bill.id) }}"
+        {% endif %}
         $.ajax({
-            url: '/admin/bills/add',
+            url: url,
             type: 'POST',
             data: JSON.stringify(obj),
             contentType: 'application/json; charset=utf-8',
             dataType: 'json',
-            success: function(msg) {
-                alert(msg);
+            success: function(data) {
+                console.log(data);
+                window.location.href = data.redirect;
             }
         });
     });
+    {% if edit_bill %}
+
+        $(".customer-name option").filter(function() {
+            return $(this).text() == '{{bill.customer_name}}'; 
+        }).prop('selected', true);
+        
+        itemSelectHTML = "<select class='item-select'>"
+        for (var item_name in items){
+            itemSelectHTML += ("<option>" + item_name+"</option>")
+        }
+        itemSelectHTML += "</select>"
+        var i = 0;
+        $('tr.item-row').each(function(argument) {
+            // $('.item-name-cell').each(function(argument) {
+            element = $(this).find('.item-name-cell')
+            $(element).html(itemSelectHTML);
+            $(element).find("option").filter(function() {
+                return $(this).text() == existing_items[i]["name"]; 
+            }).prop('selected', true);
+            
+            brandSelectHTML = "<select class='brand-select'>"
+            for(var brand_name in items[existing_items[i]["name"]]){
+                brandSelectHTML += ("<option>" + brand_name+ "</option>")
+            }
+            brandSelectHTML += "</select>"
+            element = $(this).find('.item-brand-cell')
+            $(element).html(brandSelectHTML);
+            $(element).find("option").filter(function() {
+                return $(this).text() == existing_items[i]["brand"]; 
+            }).prop('selected', true);
+
+            element = $(this).find('.item-quantity-cell')
+            str = $(element).html()
+            $(element).html(item_quantity_input_html)
+            $(element).find('.item-quantity').val(str)
+
+            element = $(this).find('.item-discount-cell')
+            str = $(element).html()
+            $(element).html(item_discount_input_html)
+            $(element).find('.item-discount').val(str)
+            i+=1;
+        });
+    {% endif %}
 });
 </script>
 <style type="text/css">
@@ -132,7 +235,6 @@ $(document).ready(function(){
     			<div class="col-xs-6">
     				<address>
     				<strong>Billed To:</strong>
-    					John Smith<br>
                         <select class='customer-name'>
                             {% for customer in customers %}
                             <option value='{{customer.id}}'>{{customer.name}}</option>
@@ -147,57 +249,9 @@ $(document).ready(function(){
     				</address>
     			</div>
     		</div>
+            {% include "admin/bills/table.html" %}
     	</div>
     </div>
-    <div class="row">
-    	<div class="col-md-12">
-    		<div class="panel panel-default">
-    			<div class="panel-heading">
-    				<h3 class="panel-title"><strong>Order summary</strong></h3>
-    			</div>
-    			<div class="panel-body">
-    				<div class="table-responsive">
-    					<table class="table table-condensed">
-    						<thead>
-                                <tr>
-        							<td><strong>Item</strong></td>
-                                    <td><strong>Brand</strong></td>
-        							<td class="text-center"><strong>Price</strong></td>
-        							<td class="text-center"><strong>Quantity</strong></td>
-        							<td class="text-right"><strong>Totals</strong></td>
-                                </tr>
-    						</thead>
-    						<tbody id="bill-rows">
-    							<!-- foreach ($order->lineItems as $line) or some such thing here -->
-    							<tr>
-    								<td class="thick-line"></td>
-    								<td class="thick-line"></td>
-                                    <td class="thick-line"></td>
-    								<td class="thick-line text-center"><strong>Subtotal</strong></td>
-    								<td class="thick-line text-right"><strong class="sub-total">0</strong>&#8377; </td>
-                                    <td class="thick-line"><i id="add-item" class="fa fa-plus pull-right"></i></td>
-    							</tr>
-    							<tr>
-    								<td class="no-line"></td>
-    								<td class="no-line"></td>
-                                    <td class="no-line"></td>
-    								<td class="no-line text-center"><strong>Shipping</strong></td>
-    								<td class="no-line text-right">0&#8377; </td>
-    							</tr>
-    							<tr>
-    								<td class="no-line"></td>
-    								<td class="no-line"></td>
-                                    <td class="no-line"></td>
-    								<td class="no-line text-center"><strong>Total</strong></td>
-    								<td class="no-line text-right">0&#8377; </td>
-    							</tr>
-    						</tbody>
-    					</table>
-                        <button class='bill-submit btn pull-right'>Submit Bill</button>
-    				</div>
-    			</div>
-    		</div>
-    	</div>
-    </div>
+    
 </div>
 {% endblock %}

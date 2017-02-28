@@ -1,0 +1,66 @@
+<div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><strong>Order summary</strong></h3>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive">
+                        <table style='table-layout:fixed;' class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <th width='25%'><strong>Item</strong></th>
+                                    <th width='25%' ><strong>Brand</strong></th>
+                                    <th width='15%' class="text-center"><strong>Price</strong></th>
+                                    <th width='10%' class="text-center"><strong>Quantity</strong></th>
+                                    <th width='10%' class="text-center"><strong>Discount(%)</strong></th>
+                                    <th width='10%' class="text-right"><strong>Totals</strong></th>
+                                </tr>
+                            </thead>
+                            <tbody id="bill-rows">
+                                {% for bill_item in bill_items %}
+                                    <tr class='item-row'>
+                                        <td class='item-name-cell'>{{bill_item[1].name}}</td>
+                                        <td class='item-brand-cell'> {{bill_item[1].brand}} </td>
+                                        <td class='text-center item-price'>{{bill_item[0].item_price}}</td>
+                                        <td class='item-quantity-cell text-center'>{{bill_item[0].quantity}}</td>
+                                        <td class='item-discount-cell text-center'>{{bill_item[0].discount}}</td>
+                                        <td class='text-right item-total'>{{bill_item[0].total_price}}</td>
+                                    </tr>
+                                {% endfor %}
+                                <tr>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line"></td>
+                                    <td class="thick-line text-center"><strong>Subtotal</strong></td>
+                                    <td class="thick-line text-right">
+                                    <strong class="sub-total">
+                                        {% if bill_items %}
+                                            {{bill.total_bill}}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </strong>&#8377; </td>
+                                    {% if bill_items %}
+                                    {% else %}
+                                    <td class="thick-line"><i id="add-item" class="fa fa-plus pull-right"></i></td>
+                                    {% endif %}
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        {% if edit_bill %}
+                            <button class='bill-submit btn pull-right'>Edit Bill</button>
+                        {% else %}
+                            {% if bill_items %}
+                            {% else %}
+                                <button class='bill-submit btn pull-right'>Create Bill</button>
+                        {% endif %}
+                        {% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

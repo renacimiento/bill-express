@@ -168,8 +168,6 @@ def add_item():
 
     form = ItemForm()
     if form.validate_on_submit():
-        print "ITEM PRICE"
-        print form.price.data
         item = Item(name=form.name.data,brand=form.brand.data,price=form.price.data)
         try:
             # add item to the database
@@ -250,13 +248,39 @@ def delete_item(id):
 @admin.route('/bills', methods=['GET', 'POST'])
 @login_required
 def list_bills():
-
     check_admin()
 
     bills = Bill.query.all()
     return render_template('admin/bills/bills.html',
                            bills=bills, title="Bills")
 
+#returns newly Created Bill ID
+def createBillId(data):
+    bill = Bill(bill_number=data["bill_number"],customer_id=data["customer_id"],customer_name=data["customer_name"],
+        total_bill=data["total_bill"],status=data["payment_status"])
+    db.session.add(bill)
+    db.session.flush()
+    return bill.id
+
+def updateBill(data,bill):
+    bill.customer_id = data["customer_id"]
+    bill.customer_name = data["customer_name"]
+    bill.total_bill = data["total_bill"]
+    bill.status = data["payment_status"]
+    
+
+def insertBillItems(data,bill_id):
+    items = data["items"]
+    for i,item in enumerate(items):
+        item_id = item["item_id"]
+        item_price = item["item_price"]
+        quantity = item["quantity"]
+        discount = item["discount"]
+        total_price = item["total_price"]
+        bill_item = BillItem(bill_id = bill_id,item_id=item_id,
+            item_price=item_price,quantity=quantity,discount=discount,total_price=total_price)
+        db.session.add(bill_item)
+    db.session.commit()
 
 @admin.route('/bills/add', methods=['GET', 'POST'])
 @login_required
@@ -265,34 +289,13 @@ def add_bill():
     Add a bill to the database
     """
     check_admin()
-    print ("HERE")
-    if request.data:
-        print("POST_REQUEST")
-        # data = request.data
-        data = request.json
-        # data = json.loads(request.data.decode(encoding='UTF-8'))
-        print data
-        bill = Bill(bill_number=data["bill_number"],customer_id=data["customer_id"],customer_name=data["customer_name"],
-            total_bill=data["total_bill"],status=data["payment_status"])
-        db.session.add(bill)
-        db.session.flush()
-        print "HERES THE GENERATED ID"
-        bill_id = bill.id
-        items = data["items"]
-        for i,item in enumerate(items):
-            print "HERES THE Item"
-            print item
-            item_id = item["item_id"]
-            item_price = item["item_price"]
-            quantity = item["quantity"]
-            total_price = item["total_price"]
-            bill_item = BillItem(bill_id = bill_id,item_id=item_id,
-                item_price=item_price,quantity=quantity,total_price=total_price)
-            db.session.add(bill_item)
-        db.session.commit()
+    if request.method == 'POST':
+        bill_id = createBillId(request.json)
+        insertBillItems(request.json,bill_id)
         flash('You have successfully added a new bill.')
-        return redirect(url_for('admin.list_bills'))
-        
+
+        return json.dumps({'redirect':url_for('admin.view_bill',id=bill_id)}), 200, {'ContentType':'application/json'} 
+    
     add_bill = True
     items = Item.query.all()
     customers = Customer.query.all()
@@ -310,38 +313,24 @@ def add_bill():
 @login_required
 def edit_bill(id):
     """
-    Edit a bill
+    View a bill
     """
-    return
     check_admin()
-
-    add_bill = False
-
+    if request.method == 'POST':
+        bill = Bill.query.get_or_404(id)
+        updateBill(request.json,bill)
+        BillItem.query.filter(BillItem.bill_id==id).delete()
+        insertBillItems(request.json,id)
+        flash('You have successfully edited a bill.')
+        return json.dumps({'redirect':url_for('admin.view_bill',id=id)}), 200, {'ContentType':'application/json'} 
+    edit_bill = True
+    items = Item.query.all()
+    customers = Customer.query.all()
     bill = Bill.query.get_or_404(id)
-    form = BillForm(obj=bill)
-    if form.validate_on_submit():
-        bill.name = form.name.data
-        bill.TIN = form.TIN.data
-        bill.phone_number = form.phone_number.data
-        bill.address = form.address.data
-        db.session.commit()
-        flash('You have successfully edited the bill.')
-
-        # redirect to the bills page
-        return redirect(url_for('admin.list_bills'))
-    else:
-        print "VALIDATION FAILED"
-        return render_template('admin/bills/bill.html', action="Edit",
-                           add_bill=add_bill, form=form,
-                           bill=bill, title="Edit Bill")   
-    form.name.data = bill.name 
-    form.TIN.data = bill.TIN 
-    form.phone_number.data = bill.phone_number 
-    form.address.data = bill.address 
+    bill_items = db.session.query(BillItem,Item).filter(BillItem.bill_id==id).join(Item).all()
     
     return render_template('admin/bills/bill.html', action="Edit",
-                           add_bill=add_bill, form=form,
-                           bill=bill, title="Edit Bill")
+                           edit_bill=True,bill_number=bill.bill_number,items=items,customers=customers,bill=bill,bill_items=bill_items, title="Edit Bill")
 
 @admin.route('/bills/delete/<int:id>', methods=['GET','POST'])
 @login_required
@@ -372,15 +361,7 @@ def view_bill(id):
 
 
     bill = Bill.query.get_or_404(id)
-    print bill
     bill_items = db.session.query(BillItem,Item).filter(BillItem.bill_id==id).join(Item).all()
-    print "=============="
-    print bill_items
-    # form = CustomerForm(obj=customer)
-    # form.name.data = customer.name 
-    # form.TIN.data = customer.TIN 
-    # form.phone_number.data = customer.phone_number 
-    # form.address.data = customer.address 
     
     return render_template('admin/bills/view_bill.html', action="View",
                            bill=bill,bill_items=bill_items, title="View Bill")

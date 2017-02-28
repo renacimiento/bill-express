@@ -1,3 +1,10 @@
+/*CUSTOM CSS*/
+.item-quantity, .item-discount{
+    width: 3em;
+}
+.item-select, .brand-select{
+    width: 75%;
+}
 /* app/static/css/style.css */
 
 body, html {
